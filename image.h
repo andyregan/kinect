@@ -13,9 +13,9 @@ image *image_create(unsigned int width, unsigned int height);
 
 void image_destroy(image *img);
 
-void image_set_pixel(image *img, unsigned int x, unsigned int y, unsigned char pixel);
+extern inline void image_set_pixel(image *img, unsigned int x, unsigned int y, unsigned char pixel);
 
-unsigned char image_get_pixel(image *img, unsigned int x, unsigned int y);
+extern inline unsigned char image_get_pixel(image *img, unsigned int x, unsigned int y);
 
 char image_write_png(image *img, FILE *file);
 

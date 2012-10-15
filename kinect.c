@@ -46,9 +46,9 @@ void draw_depth_image(FILE *file, int width, int height) {
         c = ' ';
       }
 
-      fprintf(file, "%c", c);
+      fputc(c, file);
     }
-    fprintf(file, "\n");
+    fputc('\n', file);
   }
 
   image_destroy(img);
