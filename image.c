@@ -1,4 +1,5 @@
 #include <png.h>
+#include <math.h>
 #include <stdio.h>
 #include "image.h"
 
@@ -73,5 +74,29 @@ char image_write_png(image *img, FILE *file) {
 }
 
 char image_downsample(image *src, image *dst) {
+  if (dst->width > src->width) return 0;
+  if (dst->height > src->height) return 0;
+
+  int src_x, src_y, dst_x, dst_y, dst_offset, dst_offset_max = 0;
+  unsigned char src_pixel, dst_pixel;
+
+  for (src_y = 0; src_y < src->height; src_y++) {
+    for (src_x = 0; src_x < src->width; src_x++) {
+      dst_x = lround((double) (dst->width * src_x) / (double) src->width);
+      dst_y = lround((double) (dst->height * src_y) / (double) src->height);
+      dst_offset = dst_y * dst->width + dst_x;
+
+      src_pixel = image_get_pixel(src, src_x, src_y);
+
+      if (dst_offset > dst_offset_max) {
+        image_set_pixel(dst, dst_x, dst_y, src_pixel);
+        dst_offset_max = dst_offset;
+      } else {
+        dst_pixel = image_get_pixel(dst, dst_x, dst_y);
+        image_set_pixel(dst, dst_x, dst_y, (src_pixel + dst_pixel) / 2);
+      }
+    }
+  }
+
   return 1;
 }
