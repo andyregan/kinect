@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 #include <libfreenect.h>
 #include "image.h"
 
@@ -21,6 +23,35 @@ void capture_depth_image(freenect_device *dev, void *v_depth, uint32_t timestamp
       image_set_pixel(depth_image, x, y, depth[y * 640 + x]);
     }
   }
+}
+
+void draw_depth_image(FILE *file, int width, int height) {
+  image *img = image_create(width, height);
+  image_downsample(depth_image, img);
+
+  int x, y;
+  unsigned char pixel, c;
+
+  for (y = 0; y < height; y++) {
+    for (x = 0; x < width; x++) {
+      pixel = image_get_pixel(img, x, y);
+
+      if (pixel < 0x40) {
+        c = '%';
+      } else if (pixel < 0x80) {
+        c = '+';
+      } else if (pixel < 0xC0) {
+        c = '.';
+      } else {
+        c = ' ';
+      }
+
+      fprintf(file, "%c", c);
+    }
+    fprintf(file, "\n");
+  }
+
+  image_destroy(img);
 }
 
 int main() {
@@ -61,14 +92,21 @@ int main() {
     signal(SIGTERM, SIG_IGN);
   }
 
-  while (running && freenect_process_events(f_ctx) >= 0);
+  fprintf(stdout, "\x1B[2J");
+
+  while (running && freenect_process_events(f_ctx) >= 0) {
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+
+    fprintf(stdout, "\x1B[1;1H");
+    draw_depth_image(stdout, w.ws_col, w.ws_row - 1);
+  }
 
   freenect_stop_depth(f_dev);
   freenect_set_led(f_dev, LED_OFF);
   freenect_close_device(f_dev);
   freenect_shutdown(f_ctx);
 
-  image_write_png(depth_image, stdout);
   image_destroy(depth_image);
 
   return 0;
